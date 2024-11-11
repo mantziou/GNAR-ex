@@ -2,6 +2,8 @@ library(igraph)
 library(SparseM)
 library(Matrix)
 library(faux)
+library(lqmm)
+library(matrixcalc)
 ###### ###### ###### ###### ###### ###### ###### ###### ###### ###### ######  ######  ######  ###### 
 ###### Extended of GNAR model (Knight et al.& Mantziou et al.) for edge and node time series ###### 
 ###### ###### ###### ###### ###### ###### ###### ###### ######  ###### ###### ######  ######  ###### 
@@ -107,7 +109,7 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
     
     
     for (al in 1:n_edges_nodes){
-      #print(c("edge",edg))
+      #print(c("edge",al))
       
       # GET NEIGHBOUR EDGES and NODES
       if (al <= nedges){
@@ -162,7 +164,8 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
                   if (al <= nedges){
                     data_loc <- edge_matching(data_edges, nei[[stag]])  
                   }else{
-                    data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    #data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    data_loc <- which(V(net) %in% nei[[stag]])+nedges
                   }
                   
                   
@@ -200,7 +203,8 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
                   if (al <= nedges){
                     data_loc <- edge_matching(data_edges, nei[[stag]])  
                   }else{
-                    data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    #data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    data_loc <- which(V(net) %in% nei[[stag]])+nedges
                   }
                   
                   # CASE WHERE stag-STAGE NEIGHBOUR EDGES IS EXACTLY ONE EDGE (NO NEED TO NORMALISE) AND NON NA VALUES
@@ -503,9 +507,9 @@ edge_neighbors <- function(net, maxstage, stage_nodes){
       neighb_edges_loc=list()
       for (node in stage_nodes){
         if (length(neighb_edges_loc)==0){
-          neighb_edges_loc<-incident(net, node, mode = "all")#all, out, in
+          neighb_edges_loc<-incident(net, as.character(node), mode = "all")#all, out, in
         }else{
-          neighb_edges_loc<-igraph::union(neighb_edges_loc,incident(net, node, mode = "all"))#all, out, in
+          neighb_edges_loc<-igraph::union(neighb_edges_loc,incident(net, as.character(node), mode = "all"))#all, out, in
         }
       }
       neighb_edges[[stag]] <- neighb_edges_loc
@@ -524,10 +528,13 @@ edge_neighbors <- function(net, maxstage, stage_nodes){
 
 node_neighbors <- function(net, node, max.stage){
   tot.nei <- vector(mode="list", length=max.stage)
-  if(!is.null(neighbors(net,node,mode="all"))){
+  # if(!is.null(neighbors(net,node,mode="all"))){
+  #   tot.nei[[1]] <- unique(neighbors(net,node,mode="all"))
+  # }
+  
+  if(length(neighbors(net,node,mode="all"))!=0){
     tot.nei[[1]] <- unique(neighbors(net,node,mode="all"))
   }
-  
   if(max.stage>1){
     for(stag in 2:max.stage){
       if(!is.null(tot.nei[[stag-1]][1])){
@@ -538,13 +545,13 @@ node_neighbors <- function(net, node, max.stage){
             tmp.nei <- c(tmp.nei, neighbors(net,tot.nei[[stag-1]][nod],mode="all"))
           }
           
-          #get rid of node from list
+          #remove node from list
           if(node%in%tmp.nei){
             posrem <- which(tmp.nei==node)
             tmp.nei <- tmp.nei[-posrem]
           }
           
-          #get rid of nodes in previous lists
+          #remove nodes in previous lists
           if(sum(tmp.nei%in%unlist(tot.nei))>0){
             posrem <- which(tmp.nei%in%unlist(tot.nei))
             tmp.nei <- tmp.nei[-posrem]
@@ -1109,7 +1116,7 @@ nei_wei_mat <- function(net,data.edges,data.nodes,max.stage,nedges,nnodes,n_edge
   # data.edges: matrix with edge list for net
   # max.stage: (scalar) max r-stage neighbour edges
   # nedges: (scalar) number of edges
-  # Rerurns: list of r-stage matrices, each matrix of size nedges x nedges, 
+  # Returns: list of r-stage matrices, each matrix of size nedges x nedges, 
   # with each column j corresponding to neighbours edges of edge j with equal weights 
   wei_mat <- lapply(1:max.stage,function(x)matrix(0,nrow=n_edges_nodes,ncol=n_edges_nodes))
   for (edg in 1:n_edges_nodes){
@@ -1198,7 +1205,7 @@ node_edge_assoc <- function(n_edges_nodes,nedges,nnodes,data_nodes,data_edges){
   return(data_loc_mat)
 }
 
-gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE){
+gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE,makepd=FALSE){
   # fitmod: fitted GNAR-x model
   # timetrain: timestamps of training sample data set
   # returns BIC information criterion
@@ -1206,20 +1213,31 @@ gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE){
   resmat[is.na(resmat)] <- 0 
   covresmat <- (t(resmat) %*% resmat)/timetrain # covariance matrix of residuals
   #stopifnot(det(covresmat) != 0)
-  if (det(covresmat)==0 | det(covresmat)<0){
-    for (i in 2:60){
-      if (det(covresmat*(2^i))>0){
-      #if (det(covresmat*(i))>0){  
-        #const <- i
-        const <- 2^i
-        tmp1 <- log(det(covresmat*const))
-        tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
-        return(tmp1 + tmp2 - dim(covresmat)[1]*const)
+  if (det(covresmat)<=0){
+    if (makepd==FALSE){
+      for (i in 2:60){
+        if (det(covresmat*(2^i))>0){
+        #if (det(covresmat*(i))>0){  
+          #const <- i
+          const <- 2^i
+          tmp1 <- log(det(covresmat*const))
+          tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+          return(tmp1 + tmp2 - dim(covresmat)[1]*const)
+        }
       }
+      tmp1 <- log(det(covresmat))
+      tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+      return(tmp1 + tmp2)
+    }else if (makepd==TRUE & !is.positive.definite(covresmat)){
+      covresmat <- make.positive.definite(covresmat)
+      tmp1 <- sum(log(eigen(covresmat,only.values = TRUE)$values))
+      tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+      return(tmp1 + tmp2)
+    }else if (makepd==TRUE & is.positive.definite(covresmat)){
+      tmp1 <- sum(log(eigen(covresmat,only.values = TRUE)$values))
+      tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+      return(tmp1 + tmp2)
     }
-    tmp1 <- log(det(covresmat))
-    tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
-    return(tmp1 + tmp2)
   }else{
     tmp1 <- log(det(covresmat))
     tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
@@ -1235,18 +1253,7 @@ gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE){
   # return(tmp1 + tmp2 - dim(covresmat)[1]*const)
 }
 
-test <- function(game){
-  if (game==TRUE){
-    for (i in 1:5){
-      print("hello")
-      if (i==6){
-        return(i)
-      }
-      print(i)
-    }
-    print("oops")
-  }
-}
+
 gnarxaic <- function(fitmod,timetrain,globalalpha=TRUE){
   
   resmat <- matrix(fitmod$mod$residuals,  ncol=nrow(fitmod$data_loc_mat), byrow=FALSE)

@@ -2,8 +2,10 @@ library(igraph)
 library(SparseM)
 library(Matrix)
 library(faux)
+library(lqmm)
+library(matrixcalc)
 ###### ###### ###### ###### ###### ###### ###### ###### ###### ###### ######  ######  ######  ###### 
-###### Extended of GNAR model (Knight et al.& Mantziou et al.) for edge and node time series ###### 
+###### SUBCASE of Extended of GNAR model (ONLY NODAL TIME SERIES REGRESSION) ###### 
 ###### ###### ###### ###### ###### ###### ###### ###### ######  ###### ###### ######  ######  ###### 
 
 response_vec<-function(ts_data,alphaOrder){
@@ -107,7 +109,7 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
     
     
     for (al in 1:n_edges_nodes){
-      #print(c("edge",edg))
+      #print(c("edge",al))
       
       # GET NEIGHBOUR EDGES and NODES
       if (al <= nedges){
@@ -162,7 +164,8 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
                   if (al <= nedges){
                     data_loc <- edge_matching(data_edges, nei[[stag]])  
                   }else{
-                    data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    #data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    data_loc <- which(V(net) %in% nei[[stag]])+nedges
                   }
                   
                   
@@ -200,7 +203,8 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
                   if (al <= nedges){
                     data_loc <- edge_matching(data_edges, nei[[stag]])  
                   }else{
-                    data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    #data_loc <- which(data_nodes %in% nei[[stag]])+nedges
+                    data_loc <- which(V(net) %in% nei[[stag]])+nedges
                   }
                   
                   # CASE WHERE stag-STAGE NEIGHBOUR EDGES IS EXACTLY ONE EDGE (NO NEED TO NORMALISE) AND NON NA VALUES
@@ -409,7 +413,7 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
 }
 
 gnar_x_fit <- function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,alphaOrder,betaOrder,gammaOrder,deltaOrder,
-                       net,lead_lag_mat,globalalpha=TRUE,lead_lag_weights=FALSE,pay_now=TRUE,lag_0_sep=FALSE){
+                       net,lead_lag_mat,globalalpha=TRUE,lead_lag_weights=FALSE,pay_now=TRUE,lag_0_sep=FALSE,nodes_only=FALSE){
   # ts_data: matrix with rows edges and columns time
   # nnodes: number of nodes
   # nedges: number of edges
@@ -429,8 +433,15 @@ gnar_x_fit <- function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes
   
   des <- design_mat(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,alphaOrder,betaOrder,gammaOrder,deltaOrder,net,
                     lead_lag_mat,globalalpha=globalalpha,lead_lag_weights=lead_lag_weights,pay_now=pay_now)
-  dmat <- des$dmat
-  yvec <- response_vec(ts_data = ts_data,alphaOrder = alphaOrder)
+  if (nodes_only){
+    predt <- ncol(ts_data)-alphaOrder # lenght of time series observations considered when removing max lag
+    
+    dmat <- tail(des$dmat,n=predt*nnodes)
+    yvec <- tail(response_vec(ts_data = ts_data,alphaOrder = alphaOrder),n=predt*nnodes)
+  }else{
+    dmat <- des$dmat
+    yvec <- response_vec(ts_data = ts_data,alphaOrder = alphaOrder)
+  }
   # check if NA in response to remove, and respectively remove this rows from design mat
   if(sum(is.na(yvec))>0){
     yvec2 <- yvec[!is.na(yvec)]
@@ -538,13 +549,13 @@ node_neighbors <- function(net, node, max.stage){
             tmp.nei <- c(tmp.nei, neighbors(net,tot.nei[[stag-1]][nod],mode="all"))
           }
           
-          #get rid of node from list
+          #remove node from list
           if(node%in%tmp.nei){
             posrem <- which(tmp.nei==node)
             tmp.nei <- tmp.nei[-posrem]
           }
           
-          #get rid of nodes in previous lists
+          #remove nodes in previous lists
           if(sum(tmp.nei%in%unlist(tot.nei))>0){
             posrem <- which(tmp.nei%in%unlist(tot.nei))
             tmp.nei <- tmp.nei[-posrem]
@@ -632,15 +643,15 @@ gnar_x_predict <- function(fit_mod,ts_data,alphaOrder,betaOrder,gammaOrder,delta
       
       count <- 1
       for (ilag in 1:max(alphaOrder,gammaOrder)){
-          alphaout[[ilag]] <- coefvec[count]
-          if(betaOrder[ilag]>0){
-            betaout[[ilag]] <- coefvec[(count+1):(count+betaOrder[ilag])]
-          }
-          gammaout[[ilag]] <- coefvec[count+betaOrder[ilag]+1]
-          if(deltaOrder[ilag]>0){
-            deltaout[[ilag]] <- coefvec[(count+betaOrder[ilag]+1+1):(count+betaOrder[ilag]+1+deltaOrder[ilag])]
-          }
-          count <- count+betaOrder[ilag]+1+deltaOrder[ilag] + 1
+        alphaout[[ilag]] <- coefvec[count]
+        if(betaOrder[ilag]>0){
+          betaout[[ilag]] <- coefvec[(count+1):(count+betaOrder[ilag])]
+        }
+        gammaout[[ilag]] <- coefvec[count+betaOrder[ilag]+1]
+        if(deltaOrder[ilag]>0){
+          deltaout[[ilag]] <- coefvec[(count+betaOrder[ilag]+1+1):(count+betaOrder[ilag]+1+deltaOrder[ilag])]
+        }
+        count <- count+betaOrder[ilag]+1+deltaOrder[ilag] + 1
       }
     }
   }
@@ -670,7 +681,7 @@ gnar_x_predict <- function(fit_mod,ts_data,alphaOrder,betaOrder,gammaOrder,delta
   xx.gen[,1:alphaOrder] <- as.matrix(xx.init)
   if (pay_now==TRUE){
     xx.gen[(1:nedges),(alphaOrder+1):(alphaOrder+npred)] <- pay_data_now
-  
+    
     # fill in the last columns (predict) of xx.gen with predicted values using xx.init
     for(tpred in (alphaOrder+1):(npred+alphaOrder)){
       
@@ -726,8 +737,8 @@ gnar_x_predict <- function(fit_mod,ts_data,alphaOrder,betaOrder,gammaOrder,delta
           bb <- length(deltaout[[ilag+1]])
           if(bb>0){
             for(dd in 1:bb){
-                nei.forecast.nodes.cross <- nei.forecast.nodes.cross + deltaout[[ilag+1]][dd]*(xx.gen[1:nedges,(tpred-ilag)]%*%wei_mat[[dd]][1:nedges,(nedges+1):n_edges_nodes])
-                # print(c("nei forecast: ",nei.forecast))
+              nei.forecast.nodes.cross <- nei.forecast.nodes.cross + deltaout[[ilag+1]][dd]*(xx.gen[1:nedges,(tpred-ilag)]%*%wei_mat[[dd]][1:nedges,(nedges+1):n_edges_nodes])
+              # print(c("nei forecast: ",nei.forecast))
             }
           }
         }
@@ -825,12 +836,12 @@ newdat <- function(fit_mod,ts_data,alphaOrder,betaOrder,gammaOrder,deltaOrder,n_
   
   # fill in the last columns (predict) of xx.gen with predicted values using xx.init
   for(tpred in (alphaOrder+1):(npred+alphaOrder)){
-
+    
     # lags of same edge
     for(ilag in 1:alphaOrder){
       xx.new[,paste("alpha",ilag,sep = "")] <- xx.gen[,(tpred-ilag)]
     }
-
+    
     # for beta parameters neighbors
     if (sum(betaOrder)>0){
       for(ilag in 1:alphaOrder){
@@ -844,12 +855,12 @@ newdat <- function(fit_mod,ts_data,alphaOrder,betaOrder,gammaOrder,deltaOrder,n_
         }
       }
     }
-
+    
     # for gamma parameters
     for(ilag in 1:gammaOrder){
       xx.new[,paste("gamma",ilag,sep = "")] <- as.vector(xx.gen[,(tpred-ilag)]%*%data_loc_mat)
     }
-
+    
     # for delta parameters neighbors
     if (sum(deltaOrder)>0){
       for(ilag in 1:gammaOrder){
@@ -1198,28 +1209,43 @@ node_edge_assoc <- function(n_edges_nodes,nedges,nnodes,data_nodes,data_edges){
   return(data_loc_mat)
 }
 
-gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE){
+gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE,makepd=FALSE,nodes_only=FALSE,no_nodes=NULL){
   # fitmod: fitted GNAR-x model
   # timetrain: timestamps of training sample data set
   # returns BIC information criterion
-  resmat <- matrix(fitmod$mod$residuals,  ncol=nrow(fitmod$data_loc_mat), byrow=FALSE)
+  if (nodes_only){
+    resmat <- matrix(fitmod$mod$residuals,  ncol=no_nodes, byrow=FALSE)
+  }else{
+    resmat <- matrix(fitmod$mod$residuals,  ncol=nrow(fitmod$data_loc_mat), byrow=FALSE)
+  }
   resmat[is.na(resmat)] <- 0 
   covresmat <- (t(resmat) %*% resmat)/timetrain # covariance matrix of residuals
   #stopifnot(det(covresmat) != 0)
-  if (det(covresmat)==0 | det(covresmat)<0){
-    for (i in 2:60){
-      if (det(covresmat*(2^i))>0){
-      #if (det(covresmat*(i))>0){  
-        #const <- i
-        const <- 2^i
-        tmp1 <- log(det(covresmat*const))
-        tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
-        return(tmp1 + tmp2 - dim(covresmat)[1]*const)
+  if (det(covresmat)<=0){
+    if (makepd==FALSE){
+      for (i in 2:60){
+        if (det(covresmat*(2^i))>0){
+          #if (det(covresmat*(i))>0){  
+          #const <- i
+          const <- 2^i
+          tmp1 <- log(det(covresmat*const))
+          tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+          return(tmp1 + tmp2 - dim(covresmat)[1]*const)
+        }
       }
+      tmp1 <- log(det(covresmat))
+      tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+      return(tmp1 + tmp2)
+    }else if (makepd==TRUE & !is.positive.definite(covresmat)){
+      covresmat <- make.positive.definite(covresmat)
+      tmp1 <- sum(log(eigen(covresmat,only.values = TRUE)$values))
+      tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+      return(tmp1 + tmp2)
+    }else if (makepd==TRUE & is.positive.definite(covresmat)){
+      tmp1 <- sum(log(eigen(covresmat,only.values = TRUE)$values))
+      tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
+      return(tmp1 + tmp2)
     }
-    tmp1 <- log(det(covresmat))
-    tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
-    return(tmp1 + tmp2)
   }else{
     tmp1 <- log(det(covresmat))
     tmp2 <- (ncol(fitmod$dd) * log(timetrain)) / timetrain
@@ -1235,18 +1261,7 @@ gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE){
   # return(tmp1 + tmp2 - dim(covresmat)[1]*const)
 }
 
-test <- function(game){
-  if (game==TRUE){
-    for (i in 1:5){
-      print("hello")
-      if (i==6){
-        return(i)
-      }
-      print(i)
-    }
-    print("oops")
-  }
-}
+
 gnarxaic <- function(fitmod,timetrain,globalalpha=TRUE){
   
   resmat <- matrix(fitmod$mod$residuals,  ncol=nrow(fitmod$data_loc_mat), byrow=FALSE)
