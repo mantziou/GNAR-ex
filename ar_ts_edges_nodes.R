@@ -2,6 +2,8 @@ library(igraph)
 library(SparseM)
 library(Matrix)
 library(faux)
+library(lqmm)
+library(matrixcalc)
 ###### ###### ###### ###### ###### ###### ###### ###### ###### ###### ######  ######  ######  ###### 
 ###### Extended of GNAR model (Knight et al.& Mantziou et al.) for edge and node time series ###### 
 ###### ###### ###### ###### ###### ###### ###### ###### ######  ###### ###### ######  ######  ###### 
@@ -19,7 +21,7 @@ response_vec<-function(ts_data,alphaOrder){
 }
 
 design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,alphaOrder,betaOrder,gammaOrder,deltaOrder,
-                     net,lead_lag_mat,globalalpha=TRUE,lead_lag_weights=FALSE,pay_now=TRUE){
+                     net,lead_lag_mat,globalalpha=TRUE,lead_lag_weights=FALSE,pay_now=FALSE){
   
   # ts_data: matrix with rows edges and columns time
   # nnodes: number of nodes
@@ -35,6 +37,7 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
   # lead_lag_mat: matrix with rows and col corresponding to edge time series, entries showing leadingness of each time series over the other
   # globalalpha: if True, non edge-specific alpha parameters, but only lag specific alpha param
   # lead_lag_weights: whether lead-lag matrix used as weights or not
+  # pay_now: whether payments at time t to be included
   
   if (pay_now==TRUE){
     ilagstart <- 0
@@ -409,7 +412,7 @@ design_mat<-function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,a
 }
 
 gnar_x_fit <- function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes,alphaOrder,betaOrder,gammaOrder,deltaOrder,
-                       net,lead_lag_mat,globalalpha=TRUE,lead_lag_weights=FALSE,pay_now=TRUE,lag_0_sep=FALSE){
+                       net,lead_lag_mat,globalalpha=TRUE,lead_lag_weights=FALSE,pay_now=FALSE,lag_0_sep=FALSE){
   # ts_data: matrix with rows edges and columns time
   # nnodes: number of nodes
   # nedges: number of edges
@@ -424,6 +427,8 @@ gnar_x_fit <- function(ts_data,nnodes,nedges,n_edges_nodes,data_edges,data_nodes
   # lead_lag_mat: matrix with rows and col corresponding to edge time series, entries showing leadingness of each time series over the other
   # globalalpha: if True, non edge-specific alpha parameters, but only lag specific alpha param
   # lead_lag_weights: whether lead-lag matrix used as weights or not
+  # pay_now: whether payments at time t to be included
+  # lag_0_sep: if lag 0 included (i.e. payments at time t) then fit two seperate models
   
   # Returns: list with 1st element fitted model, 2nd element response vec, 3rd element design matrix, 4th element weight matrix used
   
@@ -1109,6 +1114,8 @@ nei_wei_mat <- function(net,data.edges,data.nodes,max.stage,nedges,nnodes,n_edge
   # data.edges: matrix with edge list for net
   # max.stage: (scalar) max r-stage neighbour edges
   # nedges: (scalar) number of edges
+  # nnodes: (scalar) number of nodes
+  # n_edges_nodes: (scalar) number of nodes and edges
   # Rerurns: list of r-stage matrices, each matrix of size nedges x nedges, 
   # with each column j corresponding to neighbours edges of edge j with equal weights 
   wei_mat <- lapply(1:max.stage,function(x)matrix(0,nrow=n_edges_nodes,ncol=n_edges_nodes))
@@ -1235,18 +1242,7 @@ gnarxbic <- function(fitmod,timetrain,globalalpha=TRUE){
   # return(tmp1 + tmp2 - dim(covresmat)[1]*const)
 }
 
-test <- function(game){
-  if (game==TRUE){
-    for (i in 1:5){
-      print("hello")
-      if (i==6){
-        return(i)
-      }
-      print(i)
-    }
-    print("oops")
-  }
-}
+
 gnarxaic <- function(fitmod,timetrain,globalalpha=TRUE){
   
   resmat <- matrix(fitmod$mod$residuals,  ncol=nrow(fitmod$data_loc_mat), byrow=FALSE)

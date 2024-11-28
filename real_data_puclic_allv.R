@@ -9,14 +9,13 @@ library(reshape2)
 library(ggplot2)
 library(intervals)
 
-dir_path <- "/Users/u2371456/Documents/R_directory_Turing_ONS/collab"
+dir_path <- "YOUR_DIR"
 
 # load gdp all versions
-load("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/public_updated30apr_allversions/industry_panel_Pluto_ONS_monthly_CPA_public.RData") # 40 unique industries
-load(paste(dir_path,"/data/public_updated13may_allversions/industry_panel_Pluto_ONS_monthly_CPA_public.RData",sep = "")) # 40 unique industries
+load(paste(dir_path,"/industry_panel_Pluto_ONS_monthly_CPA_public.RData",sep = "")) # 40 unique industries
 
 # load updated version of Payments for CPA codes
-load(paste(dir_path,"/data/public_updated18apr/IOT_flow_of_goods_Pluto_monthly_CPA_public.RData",sep = ""))
+load(paste(dir_path,"/IOT_flow_of_goods_Pluto_monthly_CPA_public.RData",sep = ""))
 
 prepr_gva <- function(df,rev_mon_year){
   # df: data frame with data for all versions/revsions
@@ -199,10 +198,10 @@ paydata <- prepr_pay(d0)
 rev_mon_year <- c("dec2021","mar2022","jun2022","sep2022","dec2022","mar2023","jun2023","sep2023","dec2023","mar2024")
 date_end_2_list <- c("jun_amt_2021","sep_amt_2021","dec_amt_2021","jun_amt_2022","jun_amt_2022","sep_amt_2022","dec_amt_2022","mar_amt_2023","jun_amt_2023",
                      "sep_amt_2023")
-gdpdata <- prepr_gva(dt,rev_mon_year[1])
-prep_data <- prepr_comb(gdpdata,paydata,"2016-01",tail(colnames(gdpdata),n=1),date_end_2_list[1],all_nas_row=FALSE,atleast1_na=TRUE,NULL)
-data <- prep_data$ts_pay_gdp
-stl_list <- apply(data,1,function(x) stl(ts(as.vector(x),start = c(2016,1), end=c(2021,6),frequency = 12),s.window = "periodic"))
+#gdpdata <- prepr_gva(dt,rev_mon_year[1])
+#prep_data <- prepr_comb(gdpdata,paydata,"2016-01",tail(colnames(gdpdata),n=1),date_end_2_list[1],all_nas_row=FALSE,atleast1_na=TRUE,NULL)
+#data <- prep_data$ts_pay_gdp
+#stl_list <- apply(data,1,function(x) stl(ts(as.vector(x),start = c(2016,1), end=c(2021,6),frequency = 12),s.window = "periodic"))
 
 
 for (rev in 1:10){
@@ -219,7 +218,7 @@ for (rev in 1:10){
 }
 
 save(prep_data_rev_1,prep_data_rev_2,prep_data_rev_3,prep_data_rev_4,prep_data_rev_5,prep_data_rev_6,
-     prep_data_rev_7,prep_data_rev_8,prep_data_rev_9,prep_data_rev_10,file="/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/data_allver.RData")
+     prep_data_rev_7,prep_data_rev_8,prep_data_rev_9,prep_data_rev_10,file="YOUR_DIR/data_allver.RData")
 
 # # Rev 1,2,3:same graph
 # # Rev 4,5,6,7: same graph
@@ -229,40 +228,10 @@ save(prep_data_rev_1,prep_data_rev_2,prep_data_rev_3,prep_data_rev_4,prep_data_r
 graph_allv <- graph_rev_1 %s% graph_rev_2 %s% graph_rev_3 %s% graph_rev_4 %s% graph_rev_5 %s% graph_rev_6 %s%
               graph_rev_7 %s% graph_rev_8 %s% graph_rev_9 %s% graph_rev_10
 
-# # union of edges not in common among all
-# edge_rem <- E(graph_rev_3)[!(E(graph_rev_3) %in% E(graph_allv))]
-# edge_pos_rem <- which(!(E(graph_rev_3) %in% E(graph_allv)))
+# RUN align_graph.R script to get versions with aligned graph
+# RUN real_data_public_allv_sparse.R script to get sparsified network
 
-# ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-# # reform datasets to all share the same network structure #
-# ##### ##### ##### ##### ##### ##### ##### ##### ##### ##### 
-# for (i in 1:10){
-#   if (!all(E(get(paste("graph_rev_",i,sep = ""))) %in% E(graph_allv))){ # check if there are not in common edges
-#     edge_pos_rem <- which(!(E(get(paste("graph_rev_",i,sep = ""))) %in% E(graph_allv)))
-#     edge_rem <- E(get(paste("graph_rev_",i,sep = "")))[!(E(get(paste("graph_rev_",i,sep = ""))) %in% E(graph_allv))]
-#     if (all(matrix(as.numeric(unlist(strsplit(as_ids(edge_rem),split="\\|"))),ncol = 2,byrow = TRUE)==get(paste("prep_data_rev_",i,sep=""))$data_edges[edge_pos_rem,])){ # confirm that positions of edges in graph same as position in edge list, thus in df
-#       df_pay2 <- get(paste("prep_data_rev_",i,sep = ""))$df_pay[-edge_pos_rem,]
-#       data_edges2 <-  get(paste("prep_data_rev_",i,sep = ""))$data_edges[-edge_pos_rem,]
-#       ts_pay_gdp2 <-  get(paste("prep_data_rev_",i,sep = ""))$ts_pay_gdp[-edge_pos_rem,]
-#       #graph2 <-  graph_from_edgelist(as.matrix(data_edges2),directed = TRUE)
-#       graph2 <-  graph_from_data_frame(as.data.frame(data_edges2),directed = TRUE,vertices = get(paste("prep_data_rev_",i,sep = ""))$data_nodes)
-#       nedges2 <-  ecount(graph2)
-#       n_edges_nodes2 <-  ecount(graph2)+vcount(graph2)
-#       assign(paste("prep_data_rev_",i,"uni",sep = ""),list(df_pay=df_pay2,df_gva=get(paste("prep_data_rev_",i,sep = ""))$df_gva,ts_pay_gdp=ts_pay_gdp2,CPA_node=get(paste("prep_data_rev_",i,sep = ""))$CPA_node,graph=graph2,nnodes=get(paste("prep_data_rev_",i,sep = ""))$nnodes,nedges=nedges2,
-#            n_edges_nodes=n_edges_nodes2,data_edges=data_edges2,data_nodes=get(paste("prep_data_rev_",i,sep = ""))$data_nodes))
-#     }else{
-#       warning("Not same positioning between edges in graph and edges in dataframe")
-#     }
-#   }else{
-#     assign(paste("prep_data_rev_",i,"uni",sep = ""),get(paste("prep_data_rev_",i,sep = "")))
-#     print(c("Version ",i," does not require changes"))
-#   }
-# }
-# 
-# # save(prep_data_rev_1uni,prep_data_rev_2uni,prep_data_rev_3uni,prep_data_rev_4uni,prep_data_rev_5uni,prep_data_rev_6uni,
-# #      prep_data_rev_7uni,prep_data_rev_8uni,prep_data_rev_9uni,prep_data_rev_10uni,file="/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/data_allver_alignednet.RData")
-# load("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/data_allver_alignednet.RData")
-
+# FIT AND PREDICT WITH GNAR-EX FOR EACH VERSION
 ind_stag <- 1
 nodes_only <- FALSE
 gr <- TRUE
@@ -277,21 +246,11 @@ seas_comp_list <- lapply(1:9, function(x) list())
 data_vec_list <- lapply(1:9, function(x) list())
 upper_pre <- lower_pre <- upper_or <- lower_or <- lapply(1:length(1:9), function(x) vector("list",9))
 pred_incl_pre <- pred_incl_or <- lapply(1:length(1:9),function(x) matrix(nrow = 9,ncol = 4))
-for (rev in 9){
+for (rev in 1:9){
   # data 
-  # gdpdata <- prepr_gva(dt,rev_mon_year[rev])
-  # #print(tail(colnames(gdpdata),n=1))
-  # prep_data <- prepr_comb(gdpdata,paydata,"2016-01",tail(colnames(gdpdata),n=1),date_end_2_list[rev],all_nas_row=FALSE,atleast1_na=TRUE,NULL)
-  # data <- prep_data$ts_pay_gdp[-edge_pos_rem,]
-  #prep_data <- get(paste("sparse_",rev,"_thres0.3",sep = ""))
-  #prep_data <- get(paste("prep_data_rev_",rev,"uni",sep = ""))
   prep_data <- get(paste("sparse_",rev,"_nodedgerem_thres0.4",sep = ""))
-  data <- prep_data$ts_pay_gdp_2[,1:48] # up to 48 for pre-covid
-  # data <- log(data)
-  # 
-  # # stationary
-  # data <- stationary_ts(data)
-  # 
+  data <- prep_data$ts_pay_gdp_2 # prep_data$ts_pay_gdp_2[,1:48] for up to 48 for pre-covid
+
   # growth rates
   data <- growthrates(data)
   
@@ -315,8 +274,7 @@ for (rev in 9){
       # fit GNAR-x
       fit_train <- gnar_x_fit(data_train_stl,prep_data$nnodes_2,prep_data$nedges_2,prep_data$n_edges_nodes_2,prep_data$data_edges_2,prep_data$data_nodes_2,
                               alphaOrder,betaOrder,gammaOrder,deltaOrder,prep_data$graph_2,lead_lag_mat,globalalpha=TRUE,lead_lag_weights=FALSE,pay_now = FALSE,lag_0_sep = FALSE
-                              )#nodes_only = nodes_only)
-      #print(summary(fit_train$mod)$coefficients[,4] < 0.05)
+                              )
       # Predict
       pred <- gnar_x_predict(fit_train,data_train_stl,alphaOrder,betaOrder,
                              gammaOrder,deltaOrder,prep_data$n_edges_nodes_2,prep_data$nnodes_2,prep_data$nedges_2,1,fit_train$wei_mat,fit_train$data_loc_mat,
@@ -417,146 +375,23 @@ pred_arima <- lapply(1:9, function(x) list())
 for (rev in 1:9){
   print(rev)
   # data 
-  # gdpdata <- prepr_gva(dt,rev_mon_year[rev])
-  # #print(tail(colnames(gdpdata),n=1))
-  # prep_data <- prepr_comb(gdpdata,paydata,"2016-01",tail(colnames(gdpdata),n=1),date_end_2_list[rev],all_nas_row=FALSE,atleast1_na=TRUE,NULL)
-  # data <- prep_data$ts_pay_gdp[-edge_pos_rem,]
-  #prep_data <- get(paste("prep_data_rev_",rev,"uni",sep = ""))
   prep_data <- get(paste("sparse_",rev,"_nodedgerem_thres0.4",sep = ""))
   data <- prep_data$ts_pay_gdp_2
-  # data <- log(data)
-  # 
-  # # stationary
-  # data <- stationary_ts(data)
-  # 
-  # growth rates
-  #data <- growthrates(data)
-  
-  # # stl
-  # res_stl <- prepr_stl(data,str_sub(colnames(data)[1],6,7),str_sub(tail(colnames(data),n=1),6,7),str_sub(colnames(data)[1],1,4),str_sub(tail(colnames(data),n=1),1,4),nts=1)
-  # data_train_stl <- res_stl$data_train_stl
-  # pred_trend_list[[rev]] <- res_stl$pred_trend
-  # seas_comp_list[[rev]] <- res_stl$seas_comp_nts
-  # simtrainvar <- t(data_train_stl)
+
   simtrainvar <- t(data)
   
-  #fit_arima[[rev]] <- apply(simtrainvar,2,function(x){auto.arima(x)})
+  fit_arima[[rev]] <- apply(simtrainvar,2,function(x){auto.arima(x)})
   #fit_arima[[rev]] <- apply(simtrainvar, 2, function(x){auto.arima(x,d=1,D=0,max.p = 0,max.q = 0,max.P = 0,max.Q = 0,max.d = 1,max.D = 1)})
-  fit_arima[[rev]] <- apply(simtrainvar, 2, function(x){Arima(x,order=c(0,1,0))})
+  #fit_arima[[rev]] <- apply(simtrainvar, 2, function(x){Arima(x,order=c(0,1,0))})
   ord[[rev]] <- do.call(rbind,lapply(fit_arima[[rev]],function(x) arimaorder(x)))
 
   pred_arima[[rev]] <- do.call(rbind,lapply(fit_arima[[rev]], function(x) forecast(x,h=1)$mean))
-  # if (gr==TRUE){
-  #   pred_arima[[rev]] <- prep_data$ts_pay_gdp_2[,ncol(prep_data$ts_pay_gdp_2)]*(1+pred_arima[[rev]])
-  # }
+
 }
 
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      pred_ver, 
-#      predsd_ver,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions.RData")
-
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_stlonly.RData")
-load("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_stlonly.RData")
-
-
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_growthstl.RData")
-
-
-# # below revised results for grwoth rates and stl and evaluating predictions on original scale
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_growthstl_rev.RData")
-load("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_growthstl_rev.RData")
-
-# below results from auto.arima on raw data (no stl, no grwoth rates)
-# save(fit_arima,ord,pred_arima,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_arima_rawdata.RData")
-load("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_arima_rawdata.RData")
-
-# REVISED data preprocessing and revised results for growth and stl, evaulating prediction on original scale 
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_growthstl_rev_prepr_rev.RData")
-
-# REVISED data preprocessing and revised results results from auto.arima on raw data (no stl, no grwoth rates)
-# NOTE: OBVIOUSLY FOR NODES SAME RESULTS AS THIS REVISION INVOLVES CHANGES IN NETWORK STRUCTURE NOT ON NODES, ARIMA FITTED INDIVIDUALLY USING NO NETWORK INFO
-# save(fit_arima,ord,pred_arima,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_arima_rawdata_prepr_rev.RData")
-load( "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_arima_rawdata_prepr_rev.RData")
-
-# # below  results for SPARSE network (pearson 0.4), grwoth rates and stl and evaluating predictions on original scale
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_growthstl_sparse_0.4pearson.RData")
-
-# # below  results for SPARSE network (pearson 0.4), grwoth rates and stl and evaluating predictions on original scale, SUBCASE OF GNAR-ex (ONLY NODAL EQUATION 1)
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,bicres5,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_growthstl_sparse_0.4pearson_eq1nodes.RData")
-
-# # below  results for SPARSE network (pearson 0.3), grwoth rates and stl and evaluating predictions on original scale
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,bicres5,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_growthstl_sparse_0.3pearson.RData")
-
-
-# # below results from auto.arima on raw data (no stl, no grwoth rates) FOR SPARSE network (pearson 0.4) i.e. 37 NODES (node 36 excluded)
-# save(fit_arima,ord,pred_arima,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/res_public_updated13may_allversions_arima_rawdata_sparse_0.4pearson.RData")
+############################################################################################################################################
+######################################## BELOW CODE FOR VISULISATIONS AND SUMMARIES OF RESULTS ########################################
+############################################################################################################################################
 
 ########################################################################################################
 ############# OBTAIN PROPORTION OF TRUE VALUES IN PREDICTIVE INTERVALS AMONG NODES #############
@@ -578,37 +413,9 @@ for (rev in 1:9){
 
 lapply(pred_incl,function(x) apply(x,1,which.max))
 
-# # get the true gdp/payments values from subsequent release
-# data_vec_list <- lapply(1:9, function(x) list())
-# for (rev in 1:9){
-#   # data 
-#   data <- get(paste("prep_data_rev_",rev,"uni",sep = ""))$ts_pay_gdp  
-#   
-#   data2 <- get(paste("prep_data_rev_",rev+1,"uni",sep = ""))$ts_pay_gdp
-#   # check that two consecutive data revisions, same graph
-#   ifelse(all(rownames(data2)==rownames(data)),print("same graph"),warning(paste("graph not the same between rev ",rev," and rev ",rev+1,sep="")))
-#   
-#   data_vec_list[[rev]] <- data2[,ncol(data)+1]
-# }
 
-# ind_rev <- 1
-# for (rev in 8:9){
-#   # data
-#   gdpdata <- prepr_gva(dt,rev_mon_year[rev])
-#   #print(tail(colnames(gdpdata),n=1))
-#   prep_data <- prepr_comb(gdpdata,paydata,"2016-01",tail(colnames(gdpdata),n=1),date_end_2_list[rev],all_nas_row=FALSE,atleast1_na=TRUE,NULL)
-#   data <- prep_data$ts_pay_gdp
-#   # stl
-#   res_stl <- prepr_stl(data,str_sub(colnames(data)[1],6,7),str_sub(tail(colnames(data),n=1),6,7),str_sub(colnames(data)[1],1,4),str_sub(tail(colnames(data),n=1),1,4),nts=1)
-#   data_train_stl <- res_stl$data_train_stl
-#   simtrainvar <- t(data_train_stl)
-#   for (i in 1:9){
-#     simple_ar <- apply(simtrainvar, 2, function(x){forecast(auto.arima(x,d=0,D=0,max.p = i,max.q = 0,max.P = 0,max.Q = 0,stationary = TRUE,seasonal = FALSE,
-#                                                                        ic="bic",allowmean = FALSE,allowdrift = FALSE,trace = FALSE),h=1)$mean})
-#     pred_ver[[ind_rev]][[i]][[5]] <- simple_ar+pred_trend_list[[ind_rev]]+seas_comp_list[[ind_rev]]
-#   }
-#   ind_rev <- ind_rev+1
-# }
+
+
 
 ########################################################################################
 ############# PLOT MEAN ABSOLUTE PERCENTAGE ERROR OF NODAL GDP PER RELEASE #############
@@ -618,9 +425,9 @@ mape_nodes <- lapply(1:length(1:9),function(x) matrix(nrow=9,ncol = 5))
 
 for (rev in 1:9){
   for (lagi in 1:9){
-    for (stag in 1:5){
-      predval <- tail(as.vector(pred_ver[[rev]][[lagi]][[stag]]),n=38)
-      datval <- tail(as.vector(data_vec_list[[rev]]),n=38)
+    for (stag in 1:4){
+      predval <- tail(as.vector(pred_ver[[rev]][[lagi]][[stag]]),n=32)
+      datval <- tail(as.vector(data_vec_list[[rev]]),n=32)
       mape_nodes[[rev]][lagi,stag] <- 100*(mean(abs((datval-predval))/datval))
     }
   }
@@ -655,7 +462,7 @@ titlenames <- c("Release Dec 2021","Release Mar 2022","Release Jun 2022","Releas
 for (rev in 1:9){
   rmse_df <- data.frame(gdp_sum_rel_err[[rev]])
   #rmse_df <- cbind(rmse_df,rmse_ar)
-  colnames(rmse_df) <- c("GNAR-ex 0","GNAR-ex 1","GNAR-ex 2","GNAR-ex 3")#,"AR")
+  colnames(rmse_df) <- c("GNAR-ex 0","GNAR-ex 1","GNAR-ex 2","GNAR-ex 3")
   
   rmse_df_melt <- melt(rmse_df)
   rmse_df_melt["lag"] <- rep(1:9,4)
@@ -724,21 +531,6 @@ colnames(ma_allmod) <- c("MA all GNAR-ex stage 1","ARIMA")
 rownames(ma_allmod) <- paste("Release ",substr(colnames(dt)[9:18],start = 8,stop = 14)[1:9],sep = "")
 xtable(ma_allmod)
 
-# model averaging with weights depending on BIC
-library(Rmpfr)
-weights_bic <- lapply(1:9, function(x)list())
-for (rev in 1:9){
-  expnum <- mpfr(bicres4[[rev]]*(-1/2),precBits = 106)
-  w_den <- sum(exp(expnum))# calculate the weights denominator
-  weights_bic[[rev]] <- exp(expnum)/w_den
-}
-
-ma_rel_err_bicw <- lapply(1:9,function(x)list())
-for (rev in 1:9){
-  gdp_sum <- sum(tail(data_vec_list[[rev]],32))
-  ma <- sum((weights_bic[[rev]]*gdp_sum_mat[[rev]][,-c(5)])[,1])
-  ma_rel_err_bicw[[rev]] <- abs((ma-gdp_sum)/gdp_sum)
-}
 
 # union forecast interval from MA 
 
@@ -776,7 +568,7 @@ for (rev in 1:9){
   ma_rel_err[[rev]] <- abs((ma-gdp_sum))/gdp_sum
 }
 
-load(paste(dir_path,"/data/public_updated20apr/sector_names_public.RData",sep = ""))
+load(paste(dir_path,"YOUR_DIR/sector_names_public.RData",sep = ""))
 CPA_ind_name <- conc_public[,3:4]
 CPA_ind_name <- unique(CPA_ind_name)
 codes_notin <- setdiff(unique(conc_public[,3]),sparse_1_nodedgerem_thres0.4$CPA_node_2[,1])
@@ -874,260 +666,6 @@ rownames(bestcomb) <- paste("Release ",substr(colnames(dt)[9:18],start = 8,stop 
 
 library(xtable)
 xtable(bestcomb)
-########### ########### ########### 
-########### BIC TABLES ########### 
-########### ########### ########### 
-library(xtable) # library to extract tex code for table from matrix in R
-
-table(sapply(bicres4,function(x) apply(x,1,which.min))) # best stag among lags, among releases
-bicres4 <- lapply(bicres4,function(x) {colnames(x) <- paste("stage_",c(0:3),sep = "");rownames(x) <- paste("lag_",c(1:9),sep = "");x})
-lapply(bicres4, function(x) xtable(x))
-# best lag-stage among releases
-modspec_rel <- t(sapply(bicres4,function(x) which(x==min(x),arr.ind = TRUE)))
-rownames(modspec_rel) <-paste("Release ",substr(colnames(dt)[9:18],start = 8,stop = 14)[1:9],sep = "")
-colnames(modspec_rel) <- c("lag","stage")
-modspec_rel[,2] <-modspec_rel[,2]-1 
-xtable(modspec_rel)
-
-####################################################################### 
-################ FIND CORELLATIONS BETWEEN RESIDUALS ########### 
-##################################################################
-
-# do that for best performing model, for each release (using relative error Total GDP)
 
 
-# release 1
-covresmat_rel <- covresmat_list[[1]][[8]][[4]]
-covresmat_rel <- covresmat_list[[7]][[bestmod[7,1]]][[bestmod[7,2]]]
-hist(covresmat_rel[upper.tri(covresmat_rel)])
-pos_uptr <- which(upper.tri(matrix(nrow=871,ncol=871)),arr.ind = TRUE)
-lowerb <- quantile(covresmat_rel[upper.tri(covresmat_rel)],.025)
-upperb <- quantile(covresmat_rel[upper.tri(covresmat_rel)],.975)
-outlierspos <- which((covresmat_rel[upper.tri(covresmat_rel)]<lowerb | 
-                       covresmat_rel[upper.tri(covresmat_rel)]>upperb))
-
-covpos <- pos_uptr[outlierspos,] # corresponding entries in covariance matrix
-all(names(sort(table(outlierspos[,1])))==names(sort(table(outlierspos[,2]))))
-
-pay_gdp_highcov <- covpos[which((covpos[,1]<=833 & covpos[,2]>833)),]
-
-removepaym_pos <- unique(pay_gdp_highcov[,1]) # pos of payments time series to remove
-
-
-data_edges2 <-  get(paste("prep_data_rev_",1,"uni",sep = ""))$data_edges[-removepaym_pos,]
-
-# not in common nodes (after removing edges, removing also some nodes)
-removegdp_pos <- setdiff(c(1:38),unique(c(unique(data_edges2[,2]),unique(data_edges2[,1]))))
-
-df_pay2 <- get(paste("prep_data_rev_",1,"uni",sep = ""))$df_pay[-removepaym_pos,]
-if (length(removegdp_pos)==0){
-  df_gva2 <- get(paste("prep_data_rev_",1,"uni",sep = ""))$df_gva
-  CPA_node2 <- get(paste("prep_data_rev_",1,"uni",sep = ""))$CPA_node
-  data_nodes2 <- get(paste("prep_data_rev_",1,"uni",sep = ""))$data_nodes
-}else{
-  df_gva2 <- get(paste("prep_data_rev_",1,"uni",sep = ""))$df_gva[-removegdp_pos,]  
-  CPA_node2 <- get(paste("prep_data_rev_",1,"uni",sep = ""))$CPA_node[-removegdp_pos,]
-  data_nodes2 <- get(paste("prep_data_rev_",1,"uni",sep = ""))$data_nodes[-removegdp_pos]
-}
-
-ts_pay_gdp2 <-  get(paste("prep_data_rev_",1,"uni",sep = ""))$ts_pay_gdp[-c(removepaym_pos,removegdp_pos+833),]
-graph2 <-  graph_from_edgelist(as.matrix(data_edges2),directed = TRUE)
-nedges2 <-  ecount(graph2)
-nnodes2 <- vcount(graph2)
-n_edges_nodes2 <-  ecount(graph2)+vcount(graph2)
-
-prep_data_rev_1uni_sparse <- list(df_pay=df_pay2,df_gva=df_gva2,ts_pay_gdp=ts_pay_gdp2,CPA_node=CPA_node2,graph=graph2,nnodes=nnodes2,nedges=nedges2,
-                                                     n_edges_nodes=n_edges_nodes2,data_edges=data_edges2,data_nodes=data_nodes2)
-
-
-
-########################################################################################
-plot(diag(covresmat_list[[1]][[8]][[4]]),type = "l") # plot variance of residuals (non-constant, big bumps)
-
-
-########################################################################################
-############## residuals of this regime/lag-stag specification ############## 
-########################################################################################
-norm_test_bestmod_all <- norm_test_bestmod_nodes <- c()
-for (rev in 1:9){
-  res_mean_mat <- apply(resmat_list[[rev]][[bestmod[rev,1]]][[bestmod[rev,2]]],1,mean)
-  if (nodes_only){
-    res_mean_mat_nodes <- apply(resmat_list[[rev]][[bestmod[rev,1]]][[bestmod[rev,2]]],1,mean)#[,126:162]
-  }else{
-    res_mean_mat_nodes <- apply(resmat_list[[rev]][[bestmod[rev,1]]][[bestmod[rev,2]]][,tail(seq(n_edges_nodes3),n=nnodes3)],1,mean)#[,126:162]
-    res_mean_mat_pay <- apply(resmat_list[[rev]][[bestmod[rev,1]]][[bestmod[rev,2]]][,head(seq(n_edges_nodes3),n=nedges3)],1,mean)#[,1:125]
-  }
-  
-  plot(res_mean_mat,type = "l") 
-  qqnorm(res_mean_mat,cex.lab=1.2,main=" ",cex.axis=1.2)
-  qqline(res_mean_mat,col="red")
-  norm_test_bestmod_all[rev] <- shapiro.test(res_mean_mat)[[2]]
-  norm_test_bestmod_nodes[rev] <- shapiro.test(res_mean_mat_nodes)[[2]]
-  #print(shapiro.test(res_mean_mat_pay)[[2]])
-  
-}
-shap_test <- cbind(paste("Release ",substr(colnames(dt)[9:18],start = 8,stop = 14)[1:9],sep = ""),round(norm_test_bestmod_all,digits = 4))
-colnames(shap_test) <- c("","p-value")
-xtable(as.matrix(shap_test))
-#res_mean_mat <- apply(resmat,1,mean)
-
-# SHAPIRO-WILK NORMALITY TEST HO: THERE IS NO DIFFERENCE BETWEEN NORMAL DISTRIB AND DISTR OF DATA
-
-
-############################
-# PLOT GROWTH RATES GDP
-############################
-for (rev in 9){
-  # data 
-  # gdpdata <- prepr_gva(dt,rev_mon_year[rev])
-  # #print(tail(colnames(gdpdata),n=1))
-  # prep_data <- prepr_comb(gdpdata,paydata,"2016-01",tail(colnames(gdpdata),n=1),date_end_2_list[rev],all_nas_row=FALSE,atleast1_na=TRUE,NULL)
-  # data <- prep_data$ts_pay_gdp[-edge_pos_rem,]
-  prep_data <- get(paste("prep_data_rev_",rev,"uni",sep = ""))
-  data <- prep_data$ts_pay_gdp
-  # data <- log(data)
-  # 
-  # # stationary
-  # data <- stationary_ts(data)
-  # 
-  # growth rates
-  data <- growthrates(data)
-  datadf <- data.frame(t(data),year=c(1:ncol(data)))
-  colnames(datadf)[834:871] <- prep_data$CPA_node[,1]
-  data_final <- melt(datadf[,c(866:(866+5),872)], id.vars = "year")
-  
-  # Plot the final data
-  print(ggplot(data_final,                            
-         aes(x = year,
-             y = value,
-             col = variable)) + geom_line())
-  
-}
-
-nodesextr <- c(7,12,15,13,29,26,27,34,37,35,38)
-
-CPA_node2[nodesextr,]
-testtest <- which(CPA_ind_name[,1] %in% CPA_node2[nodesextr,1])
-CPA_ind_name[testtest,]
-
-################################################################
-######## CORELLATIONS BETWEEN GDP AND PAYMENTS TS ########
-################################################################
-
-cormatrev <- lapply(1:9, function(x) matrix(,ncol=38,nrow = 833))
-paymrem <- lapply(1:9,function(x) list())
-for (rev in 1:9){
-  prep_data <- get(paste("prep_data_rev_",rev,"uni",sep = ""))
-  data <- prep_data$ts_pay_gdp
-  # data <- log(data)
-  # 
-  # # stationary
-  # data <- stationary_ts(data)
-  # 
-  # growth rates
-  data <- growthrates(data)
-  for (i in 1:833){
-    ind_col <- 1
-    for (j in 834:871){
-      cormatrev[[rev]][i,ind_col] <- cor(data[i,],data[j,],method = "pearson")
-      ind_col <- ind_col+1
-    }
-  }
-  hist(cormatrev[[rev]])
-  lowerb <- quantile(cormatrev[[rev]],.025)
-  upperb <- quantile(cormatrev[[rev]],.975)
-  abline(v=upperb,col="red")
-  abline(v=lowerb,col="red")
-  #thres <- quantile(cormatrev[[rev]],.95)
-  thres <- .3
-  outlierspos <- which((cormatrev[[rev]]<(-thres))|(cormatrev[[rev]]>thres),arr.ind = TRUE)
-  paymrem[[rev]] <- unique(outlierspos[,1])
-}
-
-
-removepaym_pos <- unique(unlist(paymrem))
-################################################
-# graph related changes common for all versions
-################################################
-data_edges3 <-  get(paste("prep_data_rev_1uni",sep = ""))$data_edges[-removepaym_pos,]
-# not in common nodes (after removing edges, removing also some nodes)
-removegdp_pos <- as.numeric(setdiff(get(paste("prep_data_rev_1uni",sep = ""))$data_nodes,unique(c(unique(data_edges3[,2]),unique(data_edges3[,1])))))
-if (length(removegdp_pos)!=0){
-  CPA_node3 <- get(paste("prep_data_rev_1uni",sep = ""))$CPA_node[-removegdp_pos,]
-  data_nodes3 <- get(paste("prep_data_rev_1uni",sep = ""))$data_nodes[-removegdp_pos]
-}else{
-  CPA_node3 <- get(paste("prep_data_rev_1uni",sep = ""))$CPA_node
-  data_nodes3 <- get(paste("prep_data_rev_1uni",sep = ""))$data_nodes
-}
-graph3 <-  graph_from_data_frame(as.data.frame(data_edges3),directed = TRUE,vertices = data_nodes3)
-nedges3 <-  ecount(graph3)
-nnodes3 <- vcount(graph3)
-n_edges_nodes3 <-  ecount(graph3)+vcount(graph3)
-for (rev in 1:10){
-  
-  
-    
-  df_pay3 <- get(paste("prep_data_rev_",rev,"uni",sep = ""))$df_pay[-removepaym_pos,]
-  if (length(removegdp_pos)==0){
-    df_gva3 <- get(paste("prep_data_rev_",rev,"uni",sep = ""))$df_gva
-    ts_pay_gdp3 <-  get(paste("prep_data_rev_",rev,"uni",sep = ""))$ts_pay_gdp[-removepaym_pos,]
-  }else{
-    df_gva3 <- get(paste("prep_data_rev_",rev,"uni",sep = ""))$df_gva[-removegdp_pos,]  
-    ts_pay_gdp3 <-  get(paste("prep_data_rev_",rev,"uni",sep = ""))$ts_pay_gdp[-c(removepaym_pos,removegdp_pos+833),]
-  }
-  
-  assign(paste("sparse_",rev,"_thres0.3",sep = ""),list(df_pay=df_pay3,df_gva=df_gva3,ts_pay_gdp=ts_pay_gdp3,CPA_node=CPA_node3,graph=graph3,nnodes=nnodes3,nedges=nedges3,
-                                    n_edges_nodes=n_edges_nodes3,data_edges=data_edges3,data_nodes=data_nodes3))
-  
-}
-#save(sparse_1,sparse_2,sparse_3,sparse_4,sparse_5,sparse_6,sparse_7,sparse_8,sparse_9,sparse_10,file="/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/sparse_data_allver.RData") # sparse network from Pearson's 0.4 threshold 
-#save(sparse_1_thres0.7,sparse_2_thres0.7,sparse_3_thres0.7,sparse_4_thres0.7,sparse_5_thres0.7,sparse_6_thres0.7,sparse_7_thres0.7,sparse_8_thres0.7,sparse_9_thres0.7,sparse_10_thres0.7,file="/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/sparse_data_allver_pears0.7.RData") # sparse network from Pearson's 0.7 threshold 
-#save(sparse_1_thres0.3,sparse_2_thres0.3,sparse_3_thres0.3,sparse_4_thres0.3,sparse_5_thres0.3,sparse_6_thres0.3,sparse_7_thres0.3,sparse_8_thres0.3,sparse_9_thres0.3,sparse_10_thres0.3,file="/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/sparse_data_allver_pears0.3.RData") # sparse network from Pearson's within [-0.3,0.3] threshold 
-for (rev in 1:9){
-  if (all(E(get(paste("sparse_",rev,sep = ""))$graph) %in% E(get(paste("sparse_",rev+1,sep = ""))$graph)) &
-      all(E(get(paste("sparse_",rev+1,sep = ""))$graph) %in% E(get(paste("sparse_",rev,sep = ""))$graph))){
-    print(c(rev,rev+1,"same"))
-  }
-}
-
-################################################################# 
-############# TABLE WITH INDUSTRY NAMES OF NODES REMOVED ############# 
-################################################################# 
-xtable(CPA_ind_name[which(CPA_ind_name[,1] %in% (get(paste("prep_data_rev_1uni",sep = ""))$CPA_node[removegdp_pos,1])),])
-
-###########################################################
-############ PLOT SPARSIFIED GRAPH #####################
-###########################################################
-plot(graph3,vertex.size=15,edge.arrow.size=0.3,vertex.color="lightblue",vertex.label.cex=.8,edge.width=2)
-
-##########################################################################################
-################## TOTAL GDP RESCALED BACK TO INDEX VALUE AND COMPARED WITH TOTAL ##################
-################## GDP INDEX FOR DIFFERENT RELEASES ANDREW DATA ##################
-##########################################################################################
-
-rescale_dates <- c("2019-01","2019-07","2019-07","2019-10","2019-01","2019-04","2019-07")
-date_ind <- 1
-totalgdp_ind <- c()
-for (i in c(3,seq(4,9))){
-  prep_data <- get(paste("sparse_",i,"_nodedgerem_thres0.4",sep = ""))
-  totalgdp_ind[date_ind] <- mean(gdp_sum_mat[[i]][,2])/sum(tail(prep_data$ts_pay_gdp_2[,which(colnames(prep_data$ts_pay_gdp_2)==rescale_dates[date_ind])],n = 32))
-  date_ind <- date_ind+1
-}
-library(readxl)
-newdata <- read_excel("/Users/u2371456/Downloads/Tail data for each release since August 2023.xlsx")
-forecast_dates <- c("2022JAN","2022JUL","2022JUL","2022OCT","2023JAN","2023APR","2023JUL")
-relerr <- list()
-relerr_df <- list()
-for (i in 1:7){
-  true <- newdata$`Total GVA`[which(newdata$`Time period`==forecast_dates[i])]
-  relerr[[i]] <- abs((totalgdp_ind[i]*100-true))/true
-  relerr_df[[i]] <- data.frame(relerror=rev(relerr[[i]]),publication=factor(rev(newdata$Publication[which(newdata$`Time period`==forecast_dates[1])]),levels=rev(newdata$Publication[which(newdata$`Time period`==forecast_dates[1])])))
-}
-
-for(i in 1:7){
-  print(ggplot(relerr_df[[i]],aes(x=as.factor(publication),y=relerror))+
-          geom_bar(stat = "identity", fill="steelblue")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1,size=12),axis.title.x = element_blank())+
-          geom_text(aes(label=round(relerror,digits = 7)), hjust=1, color="white", size=6,angle=90)+ggtitle(forecast_dates[i])
-        )
-}
 

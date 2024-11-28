@@ -1,6 +1,3 @@
-as_edgelist(graph_allv)
-identical_graphs(intersection(prep_data_rev_1$graph_2,prep_data_rev_2$graph_2,prep_data_rev_3$graph_2,prep_data_rev_4$graph_2,prep_data_rev_5$graph_2,prep_data_rev_6$graph_2,prep_data_rev_7$graph_2,prep_data_rev_8$graph_2,prep_data_rev_9$graph_2,prep_data_rev_10$graph_2),graph_allv)
-identical_graphs(intersection(graph_rev_1,graph_rev_2,graph_rev_3,graph_rev_4,graph_rev_5,graph_rev_7,graph_rev_6,graph_rev_8,graph_rev_9,graph_rev_10),graph_allv)
 
 
 for (i in 1:10){
@@ -31,4 +28,4 @@ for (i in 1:10){
 }
 
 # save(prep_data_rev_1uni,prep_data_rev_2uni,prep_data_rev_3uni,prep_data_rev_4uni,prep_data_rev_5uni,prep_data_rev_6uni,
-#      prep_data_rev_7uni,prep_data_rev_8uni,prep_data_rev_9uni,prep_data_rev_10uni,file="/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/revised_preprocessing/data_allver_alignednet_revised.RData")
+#      prep_data_rev_7uni,prep_data_rev_8uni,prep_data_rev_9uni,prep_data_rev_10uni,file="YOUR_DIR/data_allver_alignednet_revised.RData")

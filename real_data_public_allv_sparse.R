@@ -1,7 +1,7 @@
 ######## ######## ######## ######## ######## ######## ######## ######## ######## 
 ######## CORRELATION ANALYSIS FOR NODE REMOVAL AND NETWORK SPARSIFICATION ######## 
 ######## ######## ######## ######## ######## ######## ######## ######## ######## 
-dir_path <- "/Users/u2371456/Documents/R_directory_Turing_ONS/collab"
+dir_path <- "YOUR_DIR"
 
 ######## FIRST STEP: NODE REMOVAL ######## 
 
@@ -46,7 +46,7 @@ noderem_step1 <- function(prep_dat,node_vec){
 
 
 # Load data for all versions with aligned network structure
-load("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/data_allver_alignednet.RData")
+load("YOUR_DIR/data_allver_alignednet.RData")
 
 # Node removal from economic interpretation: 
 # O84 Public administration, G45 Wholesale vehicles,G46 Wholesale except vehicles, G47 Retail except vehicles, Q86 Human health,Q87-88 Residential care
@@ -58,20 +58,14 @@ for (rev in 1:10){
 
 # save(sparse_1_noderem,sparse_2_noderem,sparse_3_noderem,sparse_4_noderem,
 #      sparse_5_noderem,sparse_6_noderem,sparse_7_noderem,sparse_8_noderem,
-#      sparse_9_noderem,sparse_10_noderem,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/sparse_data_allver_noderem.RData")
+#      sparse_9_noderem,sparse_10_noderem,file = "YOUR_DIR/sparse_data_allver_noderem_rev.RData")
 
-# AFTER REVISED PREPROCESSING OF PREP_DATA_REV_UNI ALIGNED GRAPH VERSION OF DATA
-# save(sparse_1_noderem,sparse_2_noderem,sparse_3_noderem,sparse_4_noderem,
-#      sparse_5_noderem,sparse_6_noderem,sparse_7_noderem,sparse_8_noderem,
-#      sparse_9_noderem,sparse_10_noderem,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/revised_preprocessing/sparse_data_allver_noderem_rev.RData")
 
-load(paste(dir_path,"/data/data_preprocessing/revised_preprocessing/sparse_data_allver_noderem_rev.RData",sep=""))
 
 ######### STEP 2: EDGE REMOVAL ######## 
 ######## ACCORDING TO PEARSON'S CROSS INDUSTRY CORRELATIONS BETWEEN PAYMENTS AND GDP, ACROSS ALL RELEASES
 
-#thres_p <- 0.4
-thres_p_vec <- c(.3,.5,.6,.7)
+thres_p_vec <- c(.3,0.4,.5,.6,.7)
 ind_th <- 1
 removepaym_pos <- list()
 for (th in thres_p_vec){
@@ -140,95 +134,13 @@ for (th in 1:4){
   save(sparse_1_nodedgerem_thres,sparse_2_nodedgerem_thres,sparse_3_nodedgerem_thres,sparse_4_nodedgerem_thres,
        sparse_5_nodedgerem_thres,sparse_6_nodedgerem_thres,sparse_7_nodedgerem_thres,sparse_8_nodedgerem_thres,
        sparse_9_nodedgerem_thres,sparse_10_nodedgerem_thres,
-       file = paste("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/revised_preprocessing/sparse_data_allver_nodedgerem_rev_pears",thres_p_vec[th],".RData"))
+       file = paste("YOUR_DIR/sparse_data_allver_nodedgerem_rev_pears",thres_p_vec[th],".RData"))
 }
 
 
 # DATA: AFTER REVISED PREPROCESSING OF PREP_DATA_REV_UNI ALIGNED GRAPH VERSION OF DATA
 # save(sparse_1_nodedgerem_thres0.4,sparse_2_nodedgerem_thres0.4,sparse_3_nodedgerem_thres0.4,sparse_4_nodedgerem_thres0.4,
 #      sparse_5_nodedgerem_thres0.4,sparse_6_nodedgerem_thres0.4,sparse_7_nodedgerem_thres0.4,sparse_8_nodedgerem_thres0.4,
-#      sparse_9_nodedgerem_thres0.4,sparse_10_nodedgerem_thres0.4,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/data/data_preprocessing/revised_preprocessing/sparse_data_allver_nodedgerem_rev_pears0.4.RData")
-load(paste(dir_path,"/data/data_preprocessing/revised_preprocessing/sparse_data_allver_nodedgerem_rev_pears0.4.RData",sep = ""))
-
-#### RESULTS: GNAR and AR ####
-# below  results for SPARSE network (pearson 0.4), grwoth rates and stl and evaluating predictions on original scale, after node and edge removal
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_growthstl_sparse_0.4pearson_nodedgerem.RData")
-# 
-load("/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_growthstl_sparse_0.4pearson_nodedgerem.RData")
-
-# below  results for SPARSE network (pearson 0.4), grwoth rates and stl and evaluating predictions on original scale, after node and edge removal, MAX LAG=12
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_growthstl_sparse_0.4pearson_nodedgerem_maxlag12.RData")
-
-#below  results for SPARSE network (pearson 0.4), grwoth rates and stl and evaluating predictions on original scale, after node and edge removal, INCLUDING PREDICTION INTERVALS
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,
-#      upper_or,
-#      lower_or,
-#      pred_incl_or,
-#      upper_pre,
-#      lower_pre,
-#      pred_incl_pre,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_growthstl_sparse_0.4pearson_nodedgerem_predint.RData")
-# 
-load(paste(dir_path,"/results/revised_preprocessing/res_public_updated13may_allversions_growthstl_sparse_0.4pearson_nodedgerem_predint.RData",sep = ""))
-
-# #below  results for SPARSE network (pearson 0.4), grwoth rates and stl and evaluating predictions on original scale, after node and edge removal, INCLUDING PREDICTION INTERVALS AND PRE-COVID PERIOD (TRAINING ON DATA UP TO AND INCL DEC 2019 ONLY FOR LATEST RELEASE DEC 2023)
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,
-#      upper_or,
-#      lower_or,
-#      pred_incl_or,
-#      upper_pre,
-#      lower_pre,
-#      pred_incl_pre,file = paste(dir_path,"/results/revised_preprocessing/res_public_updated13may_versiondec2023_growthstl_sparse_0.4pearson_nodedgerem_predint_precovid.RData",sep = ""))
+#      sparse_9_nodedgerem_thres0.4,sparse_10_nodedgerem_thres0.4,file = "YOUR_DIR/sparse_data_allver_nodedgerem_rev_pears0.4.RData")
 
 
-### RESULTS: AUTO.ARIMA on RAW DATA
-# # below results from auto.arima on raw data (no stl, no grwoth rates) FOR SPARSE network (pearson 0.4) node and edge removal
-# save(fit_arima,ord,pred_arima,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_arima_rawdata_sparse_0.4pearson_nodedgerem.RData")
-load(paste(dir_path,"/results/revised_preprocessing/res_public_updated13may_allversions_arima_rawdata_sparse_0.4pearson_nodedgerem.RData",sep = ""))
-
-# # below  results for SPARSE network (pearson 0.3), grwoth rates and stl and evaluating predictions on original scale, after node and edge removal
-# save(rmse_mat_real,
-#      rmse_mat_real_nodes ,
-#      bicres4,
-#      pred_ver,
-#      predsd_ver,
-#      covresmat_list,
-#      resmat_list,
-#      pred_trend_list,
-#      seas_comp_list,
-#      data_vec_list,file = "/Users/amantziou/Documents/R_directory_Turing_ONS/collab/results/revised_preprocessing/res_public_updated13may_allversions_growthstl_sparse_0.3pearson_nodedgerem.RData")
